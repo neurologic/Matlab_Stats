@@ -86,7 +86,10 @@
 %         VMM_95CIs: Corresponding 95% CIs
 %            VMMall: The 'raw' variance minus the mean (no mean-matching)
 %      VMMall_95CIs: Corresponding 95% CIs
-%  
+% 
+ 
+%KEP 29 March 2014
+%want to add output of "mean rate all trials" to this function
 function Result = VarVsMean(data, times, varargin)
 
 
@@ -135,7 +138,7 @@ for t = 1:length(times)
 end
 maxRate = 0;  % used to keep track of max rate across all times / conds
 trialCount = zeros(length(data),1);  % initialize for speed (used for weighted regression)
-for cond = 1:length(data) 
+for cond = 1:length(data) % for each "cell"
     if isempty(data(cond).spikes), disp('ERROR: the field spikes is an empty matrix.'); end
     if size(data(cond).spikes, 1) < 2, disp('ERROR: in at least one case the field spikes has 1 or fewer trials.'); end
     Tstart = times - floor(boxWidth/2) + 1;
@@ -157,6 +160,8 @@ for cond = 1:length(data)
 
     varTemp = var(count);  % var and mean are taken for all times at once (to save time)
     mnTemp = mean(count);
+%this is the spikes count that I want to go along with RESULTS
+Result.meanRateAll_Trials(cond,:) = mnTemp;
     for t = 1:length(times)
         scatterDataAll(t).var(cond) = varTemp(t);
         scatterDataAll(t).mn(cond) = mnTemp(t);
@@ -216,6 +221,10 @@ for t = 1:length(times)
     Bint = [B-2*stdB, B+2*stdB];
     slopesAll(t,1) = B;
     slopesAll_95CIs(t,1:2) = Bint;
+    
+    %%%%%%%%%%######### I am putting this in there to get var/mean for each
+    %%%%%%%%%%site/stim pair
+    FanoSingleCond(:,t) = (scatterDataAll(t).var./scatterDataAll(t).mn);
     
 %%%%%%%why would you want to include VarMinusMeans?
     if includeVarMinusMean  % if asked by user (default is not)
@@ -333,6 +342,8 @@ end
 Result.FanoFactorAll = slopesAll;  % slopes (not distribution matched)
 Result.FanoAll_95CIs = slopesAll_95CIs; % 95% CI's on those slopes
 Result.scatterDataAll = scatterDataAll';  % data for scatterplot (not distribution matched)
+
+Result.FanoSingleCondAll = FanoSingleCond;
 
 if matchReps > 0        
     Result.meanRateSelect = meanRates(:,2); % the 'mean mean-rate' across time, after matching (should change little)
